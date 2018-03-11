@@ -1,0 +1,16 @@
+{
+	"description": "Demo of the CodeMirror plugin",
+	"plugins": [
+		"tiddlywiki/codemirror"
+	],
+	"themes": [
+		"tiddlywiki/vanilla",
+		"tiddlywiki/snowwhite"
+	],
+	"includeWikis": [
+	],
+	"build": {
+		"index": [
+			"--rendertiddler","$:/core/save/all","codemirrordemo.html","text/plain"]
+	}
+}

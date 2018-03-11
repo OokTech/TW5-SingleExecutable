@@ -1,0 +1,37 @@
+title: $:/plugins/OokTech/MultiUser/ControlPanelTab
+tags: $:/tags/ControlPanel
+caption: Node Settings
+
+Click on a value to edit it. After clicking on a value the trashcan icon will
+delete that field.
+To add a new value click on the <$button class='tc-btn-invisible'>{{$:/core/images/new-button}}</$button> then select if you want to add a simple property or an object that can hold further properties, then give a name to the property and if it is a simple property also give a value. When you are done click <$button class='tc-btn-invisible'>{{$:/core/images/save-button}}</$button> to save it, or click <$button class='tc-btn-invisible'>{{$:/core/images/cancel-button}}</$button> to discard the new property.
+
+{{$:/WikiSettings/split||$:/plugins/OokTech/MultiUser/EditableJSONViewTemplate}}
+
+<$button>
+  Update Settings
+  <$action-websocketmessage $type=saveSettings/>
+</$button>
+
+
+---
+
+This button will restart the wiki server, you will have to reload the wiki
+after the server has restarted to reconnect.
+This may not be a full restart in the same way as stopping the process and
+restarting from the terminal is. I am not sure why not.
+
+<$button>
+  Restart Wiki
+  <$action-websocketmessage $type=restartServer/>
+</$button>
+
+---
+
+WARNING: This button will shutdown this wiki. If you are running multiple wikis
+simultaneously this only shuts down the current wiki.
+
+<$button>
+  Shutdown Wiki
+  <$action-websocketmessage $type=shutdownServer/>
+</$button>

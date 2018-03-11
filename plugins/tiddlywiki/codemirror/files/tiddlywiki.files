@@ -1,0 +1,138 @@
+{
+	"tiddlers": [
+		{
+			"file": "codemirror.js",
+			"fields": {
+				"type": "application/javascript",
+				"title": "$:/plugins/tiddlywiki/codemirror/lib/codemirror.js",
+				"module-type": "library"
+			}
+		},{
+			"file": "codemirror.css",
+			"fields": {
+				"type": "text/css",
+				"title": "$:/plugins/tiddlywiki/codemirror/lib/codemirror.css",
+				"tags": "[[$:/tags/Stylesheet]]"
+			}
+		},{
+			"file": "addon/dialog/dialog.css",
+			"fields": {
+				"type": "text/css",
+				"title": "$:/plugins/tiddlywiki/codemirror/addon/dialog/dialog.css",
+				"tags": "[[$:/tags/Stylesheet]]"
+			}
+		},{
+			"file": "addon/dialog/dialog.js",
+			"fields": {
+				"type": "application/javascript",
+				"title": "$:/plugins/tiddlywiki/codemirror/addon/dialog/dialog.js",
+				"module-type": "library"
+			}
+		},{
+			"file": "addon/edit/matchbrackets.js",
+			"fields": {
+				"type": "application/javascript",
+				"title": "$:/plugins/tiddlywiki/codemirror/addon/edit/matchbrackets.js",
+				"module-type": "library"
+			}
+		},{
+			"file": "addon/mode/multiplex.js",
+			"fields": {
+				"type": "application/javascript",
+				"title": "$:/plugins/tiddlywiki/codemirror/addon/mode/multiplex.js",
+				"module-type": "library"
+			}
+		},{
+			"file": "addon/search/searchcursor.js",
+			"fields": {
+				"type": "application/javascript",
+				"title": "$:/plugins/tiddlywiki/codemirror/addon/search/searchcursor.js",
+				"module-type": "library"
+			}
+		},{
+			"file": "mode/css/css.js",
+			"fields": {
+				"type": "application/javascript",
+				"title": "$:/plugins/tiddlywiki/codemirror/mode/css/css.js",
+				"module-type": "library"
+			}
+		},{
+			"file": "mode/htmlembedded/htmlembedded.js",
+			"fields": {
+				"type": "application/javascript",
+				"title": "$:/plugins/tiddlywiki/codemirror/mode/htmlembedded/htmlembedded.js",
+				"module-type": "library"
+			}
+		},{
+			"file": "mode/htmlmixed/htmlmixed.js",
+			"fields": {
+				"type": "application/javascript",
+				"title": "$:/plugins/tiddlywiki/codemirror/mode/htmlmixed/htmlmixed.js",
+				"module-type": "library"
+			}
+		},{
+			"file": "mode/javascript/javascript.js",
+			"fields": {
+				"type": "application/javascript",
+				"title": "$:/plugins/tiddlywiki/codemirror/mode/javascript/javascript.js",
+				"module-type": "library"
+			}
+		},{
+			"file": "mode/markdown/markdown.js",
+			"fields": {
+				"type": "application/javascript",
+				"title": "$:/plugins/tiddlywiki/codemirror/mode/markdown/markdown.js",
+				"module-type": "library"
+			}
+		},{
+			"file": "mode/meta.js",
+			"fields": {
+				"type": "application/javascript",
+				"title": "$:/plugins/tiddlywiki/codemirror/mode/meta.js",
+				"module-type": "library"
+			}
+		},{
+			"file": "mode/tiddlywiki/tiddlywiki.css",
+			"fields": {
+				"type": "text/css",
+				"title": "$:/plugins/tiddlywiki/codemirror/mode/tiddlywiki/tiddlywiki.css",
+				"tags": "[[$:/tags/Stylesheet]]"
+			}
+		},{
+			"file": "mode/tiddlywiki/tiddlywiki.js",
+			"fields": {
+				"type": "application/javascript",
+				"title": "$:/plugins/tiddlywiki/codemirror/mode/tiddlywiki/tiddlywiki.js",
+				"module-type": "library"
+			}
+		},{
+			"file": "mode/xml/xml.js",
+			"fields": {
+				"type": "application/javascript",
+				"title": "$:/plugins/tiddlywiki/codemirror/mode/xml/xml.js",
+				"module-type": "library"
+			}
+		},{
+			"file": "keymap/vim.js",
+			"fields": {
+				"type": "application/javascript",
+				"title": "$:/plugins/tiddlywiki/codemirror/keymap/vim.js",
+				"module-type": "library"
+			}
+		},{
+			"file": "keymap/sublime.js",
+			"fields": {
+				"type": "application/javascript",
+				"title": "$:/plugins/tiddlywiki/codemirror/keymap/sublime.js",
+				"module-type": "library"
+			}
+		},{
+			"file": "keymap/emacs.js",
+			"fields": {
+				"type": "application/javascript",
+				"title": "$:/plugins/tiddlywiki/codemirror/keymap/emacs.js",
+				"module-type": "library"
+			}
+		}
+	]
+}
