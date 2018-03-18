@@ -17,8 +17,45 @@ The wiki server ip address and port is:
 
 <pre>{{$:/ServerIP}}:{{$:/ServerIP!!port}}</pre>
 
-to connect to this wiki from another computer on the same network enter the
-above into the address bar of a browser.
+<$reveal
+  type='nomatch'
+  state='$:/ServerIP'
+  text='0.0.0.0'
+>
+  Host has to be set to `0.0.0.0` in order to connect from other computers.
+  <br><br>
+  This button will restart the server, you will have to reload this browser tab
+  to reconnect to the server after it has restarted.
+  <br><br>
+  <$button>
+    Click here
+    <$action-setfield
+      $tiddler='$:/WikiSettings/split/ws-server'
+      $index=host
+      $value="0.0.0.0"
+    />
+    <$action-websocketmessage
+      $type=saveSettings
+    />
+  </$button>
+  to set the host to `0.0.0.0`
+
+  Then wait a moment for the settings files to be updated on the server (the
+  save icon shold turn back to grey) and stop then restart the server to make
+  this wiki accessible to other computers on the network.
+  <!--<$button>
+    click here
+    <$action-websocketmessage
+      $type='restartServer'
+    />
+  </$button>
+  to restart.-->
+
+</$reveal>
+
+After setting the host and restarting you can connect to this wiki from another
+computer on the same network by entering the above into the address bar of a
+browser.
 
 You can then create and edit tiddlers in any connected wiki.
 

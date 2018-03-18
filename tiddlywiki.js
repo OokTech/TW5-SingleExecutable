@@ -45,4 +45,15 @@ $tw.boot.argv = ["./IndexWiki", "--wsserver"];
 // Boot the TW5 app
 $tw.boot.boot();
 
-require("openurl").open("http://127.0.0.1:8080");
+// This opens the IndexWiki in the default browser
+openBrowser();
+
+function openBrowser() {
+  setTimeout(function () {
+    if ($tw.httpServerPort) {
+      require("openurl").open("http://127.0.0.1:" + $tw.httpServerPort);
+    } else {
+      openBrowser();
+    }
+  }, 100);
+}
