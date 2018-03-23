@@ -36,9 +36,11 @@
     "scripts": [
       "core/modules/*.js",
       "core/modules/**/*.js",
-      "boot/*.js"
+      "boot/*.js",
+      "plugins/OokTech/MultiUser/*.js"
     ],
     "assets": [
+      "editions/**",
       "editions/.*",
       "editions/MultiUser",
       "editions/MultiUser/.*",

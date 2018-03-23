@@ -3,7 +3,10 @@
 // Check to make sure that the index wiki exists
 var fs = require('fs');
 var path = require('path');
-if (!fs.existsSync(path.join(process.cwd(), 'IndexWiki'))) {
+
+var basePath = process.pkg?path.dirname(process.argv[0]):process.cwd();
+
+if (!fs.existsSync(path.join(basePath, 'IndexWiki'))) {
   // Recursively copy files from the virtual file system in the packaged
   // executable into the real file system outside it.
   // NOTE: None of the fs copying functions work on the virtual file system.
@@ -26,7 +29,7 @@ if (!fs.existsSync(path.join(process.cwd(), 'IndexWiki'))) {
   }
 
   // If we don't have an index wiki already in this location, make one.
-  var destination = path.join(process.cwd(), 'IndexWiki');
+  var destination = path.join(basePath, 'IndexWiki');
   var source = path.join(__dirname, 'editions/MultiUser')
   specialCopy(source, destination)
 }
@@ -38,9 +41,8 @@ This is invoked as a shell script by NPM when the `tiddlywiki` command is typed
 var $tw = require("./boot/boot.js").TiddlyWiki();
 
 // Pass the command line arguments to the boot kernel
-//$tw.boot.argv = Array.prototype.slice.call(process.argv,2);
 
-$tw.boot.argv = ["./IndexWiki", "--wsserver"];
+$tw.boot.argv = [path.join(basePath, "./IndexWiki"), "--wsserver"];
 
 // Boot the TW5 app
 $tw.boot.boot();
