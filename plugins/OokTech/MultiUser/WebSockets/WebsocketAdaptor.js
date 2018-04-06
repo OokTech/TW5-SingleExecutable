@@ -205,22 +205,15 @@ if($tw.node) {
               return callback(err);
             }
             // TODO figure out why renaming inside the wiki isn't working here
-            //if (tiddler.fields.text) {
-              fs.writeFile(filepath,tiddler.fields.text,{encoding: typeInfo.encoding},function(err) {
-                if(err) {
-                  return callback(err);
-                }
-                // Save with metadata
-                console.log('saved file with metadata', filepath)
-                internalSave(tiddler, internalName, prefix);
-                return callback(null);
-              });
-            /*
-            } else {
-              console.log('saved metadata file', filepath)
+            fs.writeFile(filepath,tiddler.fields.text,{encoding: typeInfo.encoding},function(err) {
+              if(err) {
+                return callback(err);
+              }
+              // Save with metadata
+              console.log('saved file with metadata', filepath)
               internalSave(tiddler, internalName, prefix);
-            }
-            */
+              return callback(null);
+            });
           });
         } else {
           // Save the tiddler as a self contained templated file

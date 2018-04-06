@@ -17,12 +17,27 @@ This handles messages sent to the node process.
 exports.platforms = ["node"];
 
 if ($tw.node) {
+  // If we are using JWT authentication than we need to check the token in each
+  // message received.
+  if ($tw.settings.UseJWT) {
+    var jwt = require("jsonwebtoken");
+  }
+
   // This lets you add to the $tw.nodeMessageHandlers object without overwriting
   // existing handler functions
   $tw.nodeMessageHandlers = $tw.nodeMessageHandlers || {};
   // Ensure that the browser tiddler list object exists without overwriting an
   // existing copy.
   $tw.BrowserTiddlerList = $tw.BrowserTiddlerList || {};
+
+  /*
+    This checks if the token is valid
+  */
+  var checkToken = function(data) {
+    //data.username
+    //data.password
+
+  }
 
   /*
     This handles when the browser sends the list of all tiddlers that currently
@@ -375,26 +390,37 @@ if ($tw.node) {
       }
 
       // Paths are relative to the root wiki path
-      //console.log($tw.boot.wikiPath)
       if (process.pkg) {
+        // This is for handling when it is a single executable
+        // Base path is where the executable is by default
         data.basePath = data.basePath || path.dirname(process.argv[0]);
+        data.wikisFolder = data.wikisFolder || 'Wikis';
       }
+      data.wikisFolder = data.wikisFolder || '';
+      // If no basepath is given than the default is to make the folder a
+      // sibling of the index wiki folder
       var basePath = data.basePath || path.join($tw.boot.wikiPath, '..')
-      var relativePath = data.path
+
+      try {
+        fs.mkdirSync(path.join(basePath, data.wikisFolder));
+        console.log('Created Wikis Folder');
+      } catch (e) {
+        console.log('Wikis Folder Exists');
+      }
+      // This is the path given by the person making the wiki, it needs to be
+      // relative to the basePath
+      // data.wikisFolder is an optional sub-folder to use. If it is set to
+      // Wikis than wikis created will be in the basepath/Wikis/relativePath
+      // folder
+      // I need better names here.
+      var relativePath = path.join(data.wikisFolder, data.path);
       var fullPath = path.join(basePath, relativePath)
       var tiddlersPath = path.join(fullPath, 'tiddlers')
-    	// Check that we don't already have a valid wiki folder
-    	if(!$tw.utils.isDirectoryEmpty(tiddlersPath) || ($tw.utils.isDirectory(fullPath) && !$tw.utils.isDirectoryEmpty(fullPath))) {
-    		console.log("Wiki folder is not empty");
-    	}
       // For now we only support creating wikis with one edition, multi edition
       // things like in the normal init command can come later.
       var editionName = data.edition?data.edition:"empty";
       var searchPaths = $tw.getLibraryItemSearchPaths($tw.config.editionsPath,$tw.config.editionsEnvVar);
       if (process.pkg) {
-        console.log(path.dirname(process.argv[0]))
-        console.log(process.argv[1])
-        console.log(process.execPath)
         var editionPath = undefined
     		var pluginPath = process.pkg.path.resolve("./editions","./" + editionName)
     		if(true || fs.existsSync(pluginPath) && fs.statSync(pluginPath).isDirectory()) {
@@ -433,7 +459,7 @@ if ($tw.node) {
       tidText['wikis'] = tidText['wikis'] || '$:/WikiSettings/split/wikis';
 
       $tw.wiki.addTiddler(new $tw.Tiddler({title:'$:/WikiSettings/split', text:tidText, type: 'application/json'}));
-      $tw.MultiUser.SendToBrowsers({type: 'makeTiddler', fields: {title:'$:/WikiSettings/split', text:tidText}});
+      $tw.MultiUser.SendToBrowsers(JSON.stringify({type: 'makeTiddler', fields: {title:'$:/WikiSettings/split', text:JSON.stringify(tidText), type: 'application/json'}, wiki: ''}));
 
       var tiddlerText = $tw.wiki.getTiddlerText('$:/WikiSettings/split/wikis')
 
@@ -453,7 +479,10 @@ if ($tw.node) {
         name = name + i;
       }
 
-      currentWikis[name] = fullPath;
+      // Use relative paths here.
+      // Note this that is dependent on process.cwd()!!
+      var rootPath = process.pkg?path.dirname(process.argv[0]):process.cwd();
+      currentWikis[name] = '.' + path.sep + path.relative(rootPath, fullPath);
 
       var tiddlerFields = {
         title: '$:/WikiSettings/split/wikis',

@@ -52,7 +52,7 @@ openBrowser();
 
 function openBrowser() {
   setTimeout(function () {
-    if ($tw.httpServerPort) {
+    if ($tw.httpServerPort && !$tw.settings.suppressBrowser) {
       require("openurl").open("http://127.0.0.1:" + $tw.httpServerPort);
     } else {
       openBrowser();
