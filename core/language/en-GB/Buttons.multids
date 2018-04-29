@@ -163,6 +163,8 @@ PreviewType/Caption: preview type
 PreviewType/Hint: Choose preview type
 Quote/Caption: quote
 Quote/Hint: Apply quoted text formatting to lines containing selection
+RotateLeft/Caption: rotate left
+RotateLeft/Hint: Rotate image left by 90 degrees
 Size/Caption: image size
 Size/Caption/Height: Height:
 Size/Caption/Resize: Resize image
@@ -179,7 +181,7 @@ Subscript/Caption: subscript
 Subscript/Hint: Apply subscript formatting to selection
 Superscript/Caption: superscript
 Superscript/Hint: Apply superscript formatting to selection
-Transclusion/Caption: transclusion
-Transclusion/Hint: Wrap selection in curly brackets
+Transcludify/Caption: transclusion
+Transcludify/Hint: Wrap selection in curly brackets
 Underline/Caption: underline
 Underline/Hint: Apply underline formatting to selection

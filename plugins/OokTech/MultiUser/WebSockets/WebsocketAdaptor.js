@@ -16,27 +16,27 @@ exports.platforms = ["node"];
 
 // Get a reference to the file system
 var fs = $tw.node ? require("fs") : null,
-	path = $tw.node ? require("path") : null;
+  path = $tw.node ? require("path") : null;
 
 if($tw.node) {
 
   function WebsocketAdaptor(options) {
-  	var self = this;
-  	this.wiki = options.wiki;
-  	this.logger = new $tw.utils.Logger("WebsocketAdaptor",{colour: "blue"});
-  	// Create the <wiki>/tiddlers folder if it doesn't exist
-  	//$tw.utils.createDirectory($tw.boot.wikiTiddlersPath);
+    var self = this;
+    this.wiki = options.wiki;
+    this.logger = new $tw.utils.Logger("WebsocketAdaptor",{colour: "blue"});
+    // Create the <wiki>/tiddlers folder if it doesn't exist
+    //$tw.utils.createDirectory($tw.boot.wikiTiddlersPath);
   }
 
   WebsocketAdaptor.prototype.name = "WebsocketAdaptor";
 
   WebsocketAdaptor.prototype.isReady = function() {
-  	// The file system adaptor is always ready
-  	return true;
+    // The file system adaptor is always ready
+    return true;
   };
 
   WebsocketAdaptor.prototype.getTiddlerInfo = function(tiddler) {
-  	return {};
+    return {};
   };
 
   /*
@@ -66,7 +66,7 @@ if($tw.node) {
     if (title.startsWith('{' + prefix + '}')) {
       title = title.replace('{' + prefix + '}', '');
     }
-    var internalTitle = '{' + prefix + '}' ==='{}'?title:'{' + prefix + '}' + title;
+    var internalTitle = '{' + prefix + '}' + title;
     var fileInfo = $tw.boot.files[internalTitle];
     if(fileInfo) {
       // If so, just invoke the callback
@@ -87,7 +87,13 @@ if($tw.node) {
         extension = ".tid";
       }
       // Generate the base filepath and ensure the directories exist
-      var tiddlersPath = prefix === ''? $tw.MultiUser.Wikis.RootWiki.wikiTiddlersPath:$tw.MultiUser.Wikis[prefix].wikiTiddlersPath
+      $tw.MultiUser.Wikis = $tw.MultiUser.Wikis || {};
+      $tw.MultiUser.Wikis[prefix] = $tw.MultiUser.Wikis[prefix] || {};
+      // A cludge to make things work
+      if (prefix === 'RootWiki') {
+        $tw.MultiUser.Wikis[prefix].wikiTiddlersPath = $tw.MultiUser.Wikis[prefix].wikiTiddlersPath || $tw.boot.wikiTiddlersPath;
+      }
+      var tiddlersPath = $tw.MultiUser.Wikis[prefix].wikiTiddlersPath;
       var baseFilepath = path.resolve(tiddlersPath, self.generateTiddlerBaseFilepath(title));
       $tw.utils.createFileDirectories(baseFilepath);
       // Start by getting a list of the existing files in the directory
@@ -112,15 +118,9 @@ if($tw.node) {
         fileInfo.filepath = filepath;
   console.log("\x1b[1;35m" + "For " + title + ", type is " + fileInfo.type + " hasMetaFile is " + fileInfo.hasMetaFile + " filepath is " + fileInfo.filepath + "\x1b[0m");
         $tw.boot.files[internalTitle] = fileInfo;
-        if (prefix !== '') {
-          if ($tw.MultiUser.Wikis[prefix].tiddlers.indexOf(internalTitle) !== -1) {
-            $tw.MultiUser.Wikis[prefix].tiddlers.push(internalTitle);
-          }
-        } else {
-          $tw.MultiUser.Wikis.RootWiki.tiddlers = $tw.MultiUser.Wikis.RootWiki.tiddlers || [];
-          if ($tw.MultiUser.Wikis.RootWiki.tiddlers.indexOf(internalTitle) !== -1 && !internalTitle.startsWith('{')) {
-            $tw.MultiUser.Wikis.RootWiki.tiddlers.push(internalTitle);
-          }
+        $tw.MultiUser.Wikis[prefix].tiddlers = $tw.MultiUser.Wikis[prefix].tiddlers || [];
+        if ($tw.MultiUser.Wikis[prefix].tiddlers.indexOf(internalTitle) !== -1) {
+          $tw.MultiUser.Wikis[prefix].tiddlers.push(internalTitle);
         }
         // Pass it to the callback
         callback(null,fileInfo);
@@ -132,41 +132,47 @@ if($tw.node) {
   Given a list of filters, apply every one in turn to source, and return the first result of the first filter with non-empty result.
   */
   WebsocketAdaptor.prototype.findFirstFilter = function(filters,source) {
-  	for(var i=0; i<filters.length; i++) {
-  		var result = this.wiki.filterTiddlers(filters[i],null,source);
-  		if(result.length > 0) {
-  			return result[0];
-  		}
-  	}
-  	return null;
+    for(var i=0; i<filters.length; i++) {
+      var result = this.wiki.filterTiddlers(filters[i],null,source);
+      if(result.length > 0) {
+        return result[0];
+      }
+    }
+    return null;
   };
 
   /*
   Given a tiddler title and an array of existing filenames, generate a new legal filename for the title, case insensitively avoiding the array of existing filenames
   */
   WebsocketAdaptor.prototype.generateTiddlerBaseFilepath = function(title) {
-  	var baseFilename;
-  	// Check whether the user has configured a tiddler -> pathname mapping
-  	var pathNameFilters = this.wiki.getTiddlerText("$:/config/FileSystemPaths");
-  	if(pathNameFilters) {
-  		var source = this.wiki.makeTiddlerIterator([title]);
-  		baseFilename = this.findFirstFilter(pathNameFilters.split("\n"),source);
-  		if(baseFilename) {
-  			// Interpret "/" and "\" as path separator
-  			baseFilename = baseFilename.replace(/\/|\\/g,path.sep);
-  		}
-  	}
-  	if(!baseFilename) {
-  		// No mappings provided, or failed to match this tiddler so we use title as filename
-  		baseFilename = title.replace(/\/|\\/g,"_");
-  	}
-  	// Remove any of the characters that are illegal in Windows filenames
-  	var baseFilename = $tw.utils.transliterate(baseFilename.replace(/<|>|\:|\"|\||\?|\*|\^/g,"_"));
-  	// Truncate the filename if it is too long
-  	if(baseFilename.length > 200) {
-  		baseFilename = baseFilename.substr(0,200);
-  	}
-  	return baseFilename;
+    if (title.startsWith('{')) {
+      var ending = title.indexOf('}');
+      // If ending is -1 than this just returns the title, otherwise it cuts
+      // off the prefix.
+      title = title.slice(ending+1)
+    }
+    var baseFilename;
+    // Check whether the user has configured a tiddler -> pathname mapping
+    var pathNameFilters = this.wiki.getTiddlerText("$:/config/FileSystemPaths");
+    if(pathNameFilters) {
+      var source = this.wiki.makeTiddlerIterator([title]);
+      baseFilename = this.findFirstFilter(pathNameFilters.split("\n"),source);
+      if(baseFilename) {
+        // Interpret "/" and "\" as path separator
+        baseFilename = baseFilename.replace(/\/|\\/g,path.sep);
+      }
+    }
+    if(!baseFilename) {
+      // No mappings provided, or failed to match this tiddler so we use title as filename
+      baseFilename = title.replace(/\/|\\/g,"_");
+    }
+    // Remove any of the characters that are illegal in Windows filenames
+    var baseFilename = $tw.utils.transliterate(baseFilename.replace(/<|>|\:|\"|\||\?|\*|\^/g,"_"));
+    // Truncate the filename if it is too long
+    if(baseFilename.length > 200) {
+      baseFilename = baseFilename.substr(0,200);
+    }
+    return baseFilename;
   };
 
   /*
@@ -182,7 +188,7 @@ if($tw.node) {
 
       }
     }
-    prefix = prefix || '';
+    prefix = prefix || 'RootWiki';
     var internalName = (prefix === '' || tiddler.fields.title.startsWith('{' + prefix + '}')) ? tiddler.fields.title:'{' + prefix + '}' + tiddler.fields.title;
     if (tiddler && $tw.MultiUser.ExcludeList.indexOf(tiddler.fields.title) === -1 && !tiddler.fields.title.startsWith('$:/state/') && !tiddler.fields.title.startsWith('$:/temp/')) {
       var self = this;
@@ -244,22 +250,19 @@ if($tw.node) {
     var message = JSON.stringify({type: 'makeTiddler', wiki: prefix, fields: tiddler.fields});
     $tw.MultiUser.SendToBrowsers(message);
     // This may help
-    if (prefix !== '') {
-      if ($tw.MultiUser.Wikis[prefix].tiddlers.indexOf(internalName) === -1) {
-        $tw.MultiUser.Wikis[prefix].tiddlers.push(internalName);
-      }
-    } else {
-      $tw.MultiUser.Wikis.RootWiki = $tw.MultiUser.Wikis.RootWiki || {};
-      $tw.MultiUser.Wikis.RootWiki.tiddlers = $tw.MultiUser.Wikis.RootWiki.tiddlers || [];
-      if ($tw.MultiUser.Wikis.RootWiki.tiddlers.indexOf(internalName) === -1 && !internalName.startsWith('{')) {
-        $tw.MultiUser.Wikis.RootWiki.tiddlers.push(internalName);
-      }
+    $tw.MultiUser.Wikis = $tw.MultiUser.Wikis || {};
+    $tw.MultiUser.Wikis[prefix] = $tw.MultiUser.Wikis[prefix] || {};
+    $tw.MultiUser.Wikis[prefix].tiddlers = $tw.MultiUser.Wikis[prefix].tiddlers || [];
+    if ($tw.MultiUser.Wikis[prefix].tiddlers.indexOf(internalName) === -1) {
+      $tw.MultiUser.Wikis[prefix].tiddlers.push(internalName);
     }
   }
 
   // This transforms a tiddler into the form needed for a .tid file.
   // TODO figure out if we can replace this with the built-in function. We need
   // to look at the isMeta part
+  // NOTE the built in version isn't fixing the part where modified and created
+  // aren't valid data if the text field is empty. I still have no idea why
   function makeTiddlerFile(tiddler, isMeta) {
     var output = "";
     Object.keys(tiddler.fields).forEach(function(fieldName, index) {

@@ -17,27 +17,12 @@ This handles messages sent to the node process.
 exports.platforms = ["node"];
 
 if ($tw.node) {
-  // If we are using JWT authentication than we need to check the token in each
-  // message received.
-  if ($tw.settings.UseJWT) {
-    var jwt = require("jsonwebtoken");
-  }
-
   // This lets you add to the $tw.nodeMessageHandlers object without overwriting
   // existing handler functions
   $tw.nodeMessageHandlers = $tw.nodeMessageHandlers || {};
   // Ensure that the browser tiddler list object exists without overwriting an
   // existing copy.
   $tw.BrowserTiddlerList = $tw.BrowserTiddlerList || {};
-
-  /*
-    This checks if the token is valid
-  */
-  var checkToken = function(data) {
-    //data.username
-    //data.password
-
-  }
 
   /*
     This handles when the browser sends the list of all tiddlers that currently
@@ -48,6 +33,7 @@ if ($tw.node) {
     // Save the list of tiddlers in the browser as part of the $tw object so it
     // can be used elsewhere.
     $tw.BrowserTiddlerList[data.source_connection] = data.titles;
+   $tw.CreateSettingsTiddlers(data.wiki);
   }
 
   /*
@@ -69,6 +55,9 @@ if ($tw.node) {
     Object.keys(data).forEach(function (key) {
       message[key] = data[key];
     })
+    if (data.heartbeat) {
+      message.heartbeat = true;
+    }
     // When the server receives a ping it sends back a pong.
     var response = JSON.stringify(message);
     $tw.connections[data.source_connection].socket.send(response);
@@ -92,7 +81,8 @@ if ($tw.node) {
         // Ignore draft tiddlers
         if (!data.tiddler.fields['draft.of']) {
           var prefix = data.wiki || '';
-          var internalTitle = prefix === ''?data.tiddler.fields.title:'{' + prefix + '}' + data.tiddler.fields.title;
+          //var internalTitle = prefix === ''?data.tiddler.fields.title:'{' + prefix + '}' + data.tiddler.fields.title;
+          var internalTitle = '{' + prefix + '}' + data.tiddler.fields.title;
           // Set the saved tiddler as no longer being edited. It isn't always
           // being edited but checking eacd time is more complex than just always
           // setting it this way and doesn't benifit us.
@@ -105,7 +95,6 @@ if ($tw.node) {
           if (!$tw.MultiUser.WaitingList[data.source_connection][data.tiddler.fields.title]) {
             // If we are not expecting a save tiddler event than save the tiddler
             // normally.
-            console.log('Node Save Tiddler');
             if (!$tw.boot.files[internalTitle]) {
               $tw.syncadaptor.saveTiddler(data.tiddler, prefix);
               $tw.MultiUser.WaitingList[data.source_connection][data.tiddler.fields.title] = true;
@@ -161,11 +150,9 @@ if ($tw.node) {
     This is the handler for when the browser sends the deleteTiddler message.
   */
   $tw.nodeMessageHandlers.deleteTiddler = function(data) {
-    console.log('Node Delete Tiddler');
+    //console.log('Node Delete Tiddler');
     // Make the internal name
-    data.wiki = data.wiki || '';
-
-    data.tiddler = data.wiki === ''?data.tiddler:'{' + data.wiki + '}' + data.tiddler;
+    data.tiddler = '{' + data.wiki + '}' + data.tiddler;
     // Delete the tiddler file from the file system
     $tw.syncadaptor.deleteTiddler(data.tiddler);
     // Remove the tiddler from the list of tiddlers being edited.
@@ -179,8 +166,7 @@ if ($tw.node) {
     This is the handler for when a browser sends the editingTiddler message.
   */
   $tw.nodeMessageHandlers.editingTiddler = function(data) {
-    data.wiki = data.wiki || '';
-    var internalName = data.wiki === ''?data.tiddler:'{' + data.wiki + '}' + data.tiddler;
+    var internalName = '{' + data.wiki + '}' + data.tiddler;
     // Add the tiddler to the list of tiddlers being edited to prevent multiple
     // people from editing it at the same time.
     $tw.MultiUser.UpdateEditingTiddlers(internalName);
@@ -205,8 +191,7 @@ if ($tw.node) {
         var title = data.tiddler;
       }
     }
-    data.wiki = data.wiki || '';
-    var internalName = data.wiki === ''?title:'{' + data.wiki + '}' + title;
+    var internalName = '{' + data.wiki + '}' + title;
     // Remove the current tiddler from the list of tiddlers being edited.
     if ($tw.MultiUser.EditingTiddlers[internalName]) {
       delete $tw.MultiUser.EditingTiddlers[internalName];
@@ -255,10 +240,10 @@ if ($tw.node) {
       var path = require('path');
       var fs = require('fs');
     }
-    var prefix = data.wiki === ''?'':'{'+data.wiki+'}';
+    var prefix = '{'+data.wiki+'}';
     // Get first tiddler to start out
     var tiddler = $tw.wiki.getTiddler(prefix + '$:/WikiSettings/split');
-    var settings = JSON.stringify(buildSettings(tiddler, ''), "", 2);
+    var settings = JSON.stringify(buildSettings(tiddler, prefix), "", 2);
     // Update the settings tiddler in the wiki.
     var tiddlerFields = {
       title: prefix + '$:/WikiSettings',
@@ -268,9 +253,14 @@ if ($tw.node) {
     // Add the tiddler
     $tw.wiki.addTiddler(new $tw.Tiddler(tiddlerFields));
     // Push changes out to the browsers
-    $tw.MultiUser.SendToBrowsers({type: 'makeTiddler', fields: tiddlerFields});
+    var tiddlerFields2 = {
+      title: '$:/WikiSettings',
+      text: settings,
+      type: 'application/json'
+    };
+    $tw.MultiUser.SendToBrowsers({type: 'makeTiddler', fields: tiddlerFields2});
     // Get the wiki path
-    var wikiPath = data.wiki === ''?$tw.boot.wikiPath:$tw.MultiUser.Wikis[data.wiki].wikiPath;
+    var wikiPath = $tw.MultiUser.Wikis[data.wiki].wikiPath;
     // Make sure the settings folder exists
     if (!fs.existsSync(path.join(wikiPath, 'settings'))) {
       // Create the settings folder
@@ -290,25 +280,31 @@ if ($tw.node) {
     $tw.settings = {};
     // Put the updated version in.
     $tw.updateSettings($tw.settings, JSON.parse(settings));
+
+    $tw.CreateSettingsTiddlers();
   }
 
   function buildSettings (tiddler, prefix) {
     var settings = {};
-    var object = (typeof tiddler.fields.text === 'string')?JSON.parse(tiddler.fields.text):tiddler.fields.text;
-    Object.keys(object).forEach(function (field) {
-      if (typeof object[field] === 'string' || typeof object[field] === 'number') {
-        if (String(object[field]).startsWith(prefix + '$:/WikiSettings/split')) {
-          // Recurse!
-          var newTiddler = $tw.wiki.getTiddler(prefix + object[field]);
-          settings[field] = buildSettings(newTiddler, prefix);
-        } else {
-          // Actual thingy!
-          settings[field] = object[field];
-        }
-      } else {
-        settings[field] = "";
+    if (tiddler) {
+      if (tiddler.fields) {
+        var object = (typeof tiddler.fields.text === 'string')?JSON.parse(tiddler.fields.text):tiddler.fields.text;
+        Object.keys(object).forEach(function (field) {
+          if (typeof object[field] === 'string' || typeof object[field] === 'number') {
+            if (String(object[field]).startsWith('$:/WikiSettings/split')) {
+              // Recurse!
+              var newTiddler = $tw.wiki.getTiddler(prefix + object[field]);
+              settings[field] = buildSettings(newTiddler, prefix);
+            } else {
+              // Actual thingy!
+              settings[field] = object[field];
+            }
+          } else {
+            settings[field] = "";
+          }
+        });
       }
-    });
+    }
     return settings;
   }
 
@@ -357,7 +353,7 @@ if ($tw.node) {
   // This updates what wikis are being served and where they are being served
   $tw.nodeMessageHandlers.updateRoutes = function (data) {
     // This is only usable on the root wiki!
-    if (data.wiki === '') {
+    if (data.wiki === 'RootWiki') {
       // Then clear all the routes to the non-root wiki
       $tw.httpServer.clearRoutes();
       // The re-add all the routes from the settings
@@ -366,11 +362,179 @@ if ($tw.node) {
     }
   }
 
+  // This builds a single file html version of the current wiki.
+  // This is a simplifed version of the renderTiddler command because I
+  // couldn't figure out how to just call that command here.
+  // TODO let people pass a custom exclude filter here.
+  // TODO let people give an include filter that can build a wiki from tiddlers
+  // drawn from any of the served wikis.
+  $tw.nodeMessageHandlers.buildHTMLWiki = function (data) {
+    console.log('Build Wiki')
+    var path = require('path')
+    var fs = require('fs')
+    var wikiPath, fullName;
+    if (data.buildWiki) {
+      var exists = $tw.httpServer.loadWiki(data.buildWiki);
+      if (exists) {
+        wikiPath = $tw.MultiUser.Wikis[data.buildWiki].wikiPath || undefined;
+        fullName = data.buildWiki;
+      }
+    } else {
+      wikiPath = $tw.MultiUser.Wikis[data.wiki].wikiPath;
+      fullName = data.wiki
+    }
+    if (wikiPath) {
+      var outputFolder = data.outputFolder || 'output';
+      var outputName = data.outputName || 'index.html';
+      var outputFile = path.resolve(wikiPath, outputFolder, 'index.html');
+      $tw.utils.createFileDirectories(outputFile);
+      // We want to ignore the server-specific plugins to keep things small.
+      var excludeList = ['$:/plugins/OokTech/MultiUser', '$:/plugins/tiddlywiki/filesystem', '$:/plugins/tiddlywiki/tiddlyweb'];
+      // tiddlers for this wiki.
+      var options = {
+        variables: {
+          wikiTiddlers:
+            $tw.MultiUser.Wikis[fullName].tiddlers.concat($tw.MultiUser.Wikis[fullName].plugins.concat($tw.MultiUser.Wikis[fullName].themes)).map(function(tidInfo) {
+              // This prevents the MultiUser plugin from being added to the wiki
+              // It also strips out the filesystem and tiddlyweb plugins
+              if (excludeList.indexOf(tidInfo) === -1) {
+                return '[[' + tidInfo + ']]';
+              } else {
+                return '';
+              }
+            }).join(' '),
+          wikiName: fullName
+        }
+      };
+      var text = $tw.wiki.renderTiddler('text/plain','$:/core/save/single', options);
+      fs.writeFile(outputFile,text,"utf8",function(err) {
+        if (err) {
+            console.log(err);
+          } else {
+            console.log('Built Wiki: ', outputFile);
+          }
+      });
+    } else {
+      console.log("Can't find wiki ", fullName, ", is it listed in the node settings tab?");
+    }
+  }
+
+  /*
+    This lets you select a wiki html file and split it into individual tiddlers
+    and create a new node wiki for it.
+    It also adds the new wiki to the list of wikis served.
+
+    Rather than mess around with parsing html in node I am going to have this
+    parse the html file into tiddlers in the browser and then send them to this
+    message. This also means that this can be used to make a wiki out of a sub-set of tiddlers from an existing wiki, or from different wikis.
+    TODO make this keep track of where the original wiki is so we can overwrite
+    the original wiki when saving this one.
+
+    inputs:
+    data.filePath - the path to the single file html wiki to split up.
+    data.wikisPath - the path to where the node wiki should be saved.
+    data.wikiFolder - the folder to hold the wikis
+    data.wikiName - the name to give the node version of the wiki
+  */
+  $tw.nodeMessageHandlers.newWikiFromTiddlers = function (data) {
+    // Do nothing unless there is an input file path given
+//    if (data.filePath) {
+    if (data.tiddlers) {
+      var path = require('path');
+      var fs = require('fs')
+      var wikiName, wikiTiddlersPath, basePath;
+      var wikiFolder = data.wikiFolder || "Wikis";
+      // If there is no wikiname given create one
+      if (data.wikiName) {
+        // If a name is given use it
+        wikiName = GetWikiName(data.wikiName, 0);
+      } else {
+        // Otherwise create a new wikiname
+        wikiName = GetWikiName("NewWiki", 0);
+      }
+      // If there is no output path given use a default one
+      if (data.wikisPath) {
+        basePath = data.wikisPath;
+      } else {
+        basePath = process.pkg?path.dirname(process.argv[0]):process.cwd();
+      }
+
+      // First copy the empty edition to the wikiPath to make the
+      // tiddlywiki.info
+      var params = {"wiki": "", "basePath": basePath, "wikisFolder": wikiFolder, "edition": "empty", "path": wikiName, "wikiName": wikiName};
+      $tw.nodeMessageHandlers.createNewWiki(params);
+      // Get the folder for the wiki tiddlers
+      wikiTiddlersPath = path.join(basePath, wikiFolder, wikiName, 'tiddlers');
+      // Make sure tiddlers folder exists
+      try {
+        fs.mkdirSync(wikiTiddlersPath);
+        console.log('Created Tiddlers Folder ', wikiTiddlersPath);
+      } catch (e) {
+        console.log('Tiddlers Folder Exists');
+      }
+      // Then split the wiki into separate tidders
+      //var tiddlers = $tw.loadTiddlersFromFile(data.filePath),
+      var count = 0;
+      $tw.utils.each(data.tiddlers,function(tiddler) {
+        // Save each tiddler in the correct folder
+        // Get the tiddler file title
+        var tiddlerFileName = $tw.syncadaptor.generateTiddlerBaseFilepath(tiddler.title);
+        // Output file name
+        var outputFile = path.join(wikiTiddlersPath, tiddlerFileName);
+        var options = {
+          "currentTiddler": tiddler.title
+        };
+        var text = $tw.wiki.renderTiddler('text/plain','$:/core/templates/tid-tiddler', options);
+        // Save each tiddler as a file in the appropriate place
+        fs.writeFile(outputFile,text,"utf8",function(err) {
+          if (err) {
+            console.log(err);
+          }
+        });
+        count++;
+      });
+      if(!count) {
+        console.log("No tiddlers found in the input file");
+      } else {
+        // Add the new wiki to the list of served wikis
+        // TODO this!!
+      }
+    } else {
+      console.log('No path given!');
+    }
+  }
+
+  /*
+    This ensures that the wikiName used is unique by appending a number to the
+    end of the name and incrementing the number if needed until an unused name
+    is created.
+  */
+  function GetWikiName (wikiName, count) {
+    var updatedName;
+    // If the wikiName is usused than return it
+    if (!$tw.settings.wikis[wikiName]) {
+      return wikiName;
+    } else {
+      // Try the next name and recurse
+      if (wikiName.endsWith(count)) {
+        // If the name ends in a number increment it
+        wikiName = wikiName.slice(0, -1*String(count).length);
+        count = Number(count) + 1;
+        updatedName = wikiName + String(count);
+      } else {
+        // If the name doesn't end in a number than add a 1 to start out.
+        count = Number(count) + 1;
+        updatedName = wikiName + String(count);
+      }
+      return GetWikiName(updatedName, count);
+    }
+  }
+
   // This is just a copy of the init command modified to work in this context
   $tw.nodeMessageHandlers.createNewWiki = function (data) {
-    if (data.wiki === '') {
+    if (data.wiki === 'RootWiki') {
       var fs = require("fs"),
-    		path = require("path");
+        path = require("path");
 
       function specialCopy (source, destination) {
         fs.mkdirSync(destination);
@@ -422,10 +586,10 @@ if ($tw.node) {
       var searchPaths = $tw.getLibraryItemSearchPaths($tw.config.editionsPath,$tw.config.editionsEnvVar);
       if (process.pkg) {
         var editionPath = undefined
-    		var pluginPath = process.pkg.path.resolve("./editions","./" + editionName)
-    		if(true || fs.existsSync(pluginPath) && fs.statSync(pluginPath).isDirectory()) {
-    			editionPath = pluginPath;
-    		}
+        var pluginPath = process.pkg.path.resolve("./editions","./" + editionName)
+        if(true || fs.existsSync(pluginPath) && fs.statSync(pluginPath).isDirectory()) {
+          editionPath = pluginPath;
+        }
         if (editionPath) {
           specialCopy(editionPath, fullPath);
           console.log("Copied edition '" + editionName + "' to " + fullPath + "\n");
@@ -446,22 +610,22 @@ if ($tw.node) {
           console.log(err);
         }
       }
-    	// Tweak the tiddlywiki.info to remove any included wikis
-    	var packagePath = path.join(fullPath, "tiddlywiki.info");
-    	var packageJson = JSON.parse(fs.readFileSync(packagePath));
-    	delete packageJson.includeWikis;
-    	fs.writeFileSync(packagePath,JSON.stringify(packageJson,null,$tw.config.preferences.jsonSpaces));
+      // Tweak the tiddlywiki.info to remove any included wikis
+      var packagePath = path.join(fullPath, "tiddlywiki.info");
+      var packageJson = JSON.parse(fs.readFileSync(packagePath));
+      delete packageJson.includeWikis;
+      fs.writeFileSync(packagePath,JSON.stringify(packageJson,null,$tw.config.preferences.jsonSpaces));
 
       // We need to make sure that the wikis entry is in the root settings
       // thing.
-      var tiddler = $tw.wiki.getTiddler('$:/WikiSettings/split');
+      var tiddler = $tw.wiki.getTiddler('{RootWiki}$:/WikiSettings/split');
       var tidText = tiddler?JSON.parse(tiddler.fields.text):{};
       tidText['wikis'] = tidText['wikis'] || '$:/WikiSettings/split/wikis';
 
-      $tw.wiki.addTiddler(new $tw.Tiddler({title:'$:/WikiSettings/split', text:tidText, type: 'application/json'}));
-      $tw.MultiUser.SendToBrowsers(JSON.stringify({type: 'makeTiddler', fields: {title:'$:/WikiSettings/split', text:JSON.stringify(tidText), type: 'application/json'}, wiki: ''}));
+      $tw.wiki.addTiddler(new $tw.Tiddler({title:'{RootWiki}$:/WikiSettings/split', text:tidText, type: 'application/json'}));
+      $tw.MultiUser.SendToBrowsers(JSON.stringify({type: 'makeTiddler', fields: {title:'$:/WikiSettings/split', text:JSON.stringify(tidText, "", $tw.config.preferences.jsonSpaces), type: 'application/json'}, wiki: 'RootWiki'}));
 
-      var tiddlerText = $tw.wiki.getTiddlerText('$:/WikiSettings/split/wikis')
+      var tiddlerText = $tw.wiki.getTiddlerText('{RootWiki}$:/WikiSettings/split/wikis')
 
       tiddlerText = tiddlerText?tiddlerText:"{}";
       var currentWikis = JSON.parse(tiddlerText);
@@ -470,7 +634,7 @@ if ($tw.node) {
       // Make sure we have a unique name by appending a number to the wiki name
       // if it exists.
       if (currentWikis[name]) {
-        i = 0;
+        var i = 0;
         var newName = name;
         while (currentWikis[newName]) {
           i = i + 1;
@@ -485,16 +649,21 @@ if ($tw.node) {
       currentWikis[name] = '.' + path.sep + path.relative(rootPath, fullPath);
 
       var tiddlerFields = {
-        title: '$:/WikiSettings/split/wikis',
+        title: '{RootWiki}$:/WikiSettings/split/wikis',
         text: JSON.stringify(currentWikis, null, $tw.config.preferences.jsonSpaces),
         type: 'application/json'
       };
       // Add the tiddler
       $tw.wiki.addTiddler(new $tw.Tiddler(tiddlerFields));
       // Push changes out to the browsers
-      $tw.MultiUser.SendToBrowsers(JSON.stringify({type: 'makeTiddler', fields: tiddlerFields, wiki: ''}));
+      var tiddlerFields2 = {
+        title: '$:/WikiSettings/split/wikis',
+        text: JSON.stringify(currentWikis, null, $tw.config.preferences.jsonSpaces),
+        type: 'application/json'
+      };
+      $tw.MultiUser.SendToBrowsers(JSON.stringify({type: 'makeTiddler', fields: tiddlerFields2, wiki: 'RootWiki'}));
 
-      $tw.nodeMessageHandlers.saveSettings({wiki: ''});
+      $tw.nodeMessageHandlers.saveSettings({wiki: 'RootWiki'});
 
       // Then clear all the routes to the non-root wiki
       $tw.httpServer.clearRoutes();
