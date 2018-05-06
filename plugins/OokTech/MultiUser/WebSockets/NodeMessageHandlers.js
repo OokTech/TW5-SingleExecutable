@@ -81,7 +81,6 @@ if ($tw.node) {
         // Ignore draft tiddlers
         if (!data.tiddler.fields['draft.of']) {
           var prefix = data.wiki || '';
-          //var internalTitle = prefix === ''?data.tiddler.fields.title:'{' + prefix + '}' + data.tiddler.fields.title;
           var internalTitle = '{' + prefix + '}' + data.tiddler.fields.title;
           // Set the saved tiddler as no longer being edited. It isn't always
           // being edited but checking eacd time is more complex than just always
@@ -259,15 +258,12 @@ if ($tw.node) {
       type: 'application/json'
     };
     $tw.MultiUser.SendToBrowsers({type: 'makeTiddler', fields: tiddlerFields2});
-    // Get the wiki path
-    var wikiPath = $tw.MultiUser.Wikis[data.wiki].wikiPath;
-    // Make sure the settings folder exists
-    if (!fs.existsSync(path.join(wikiPath, 'settings'))) {
-      // Create the settings folder
-      fs.mkdirSync(path.join(wikiPath, 'settings'))
-    }
     // Save the updated settings
-    var userSettingsPath = path.join(wikiPath, 'settings', 'settings.json');
+    var userSettingsPath = path.join($tw.boot.wikiPath, 'settings', 'settings.json');
+    if (!fs.existsSync(userSettingsPath)) {
+      // Create the settings folder
+      fs.mkdirSync(userSettingsPath);
+    }
     fs.writeFile(userSettingsPath, settings, {encoding: "utf8"}, function (err) {
       if (err) {
         console.log(err);
@@ -321,7 +317,31 @@ if ($tw.node) {
 
     it would be easiest to write a script and then just call the script using
     this.
+
+    If sequential is set to true than each script will only run after the
+    previous script has finished in the order they are received.
+    It is possible to run non-sequential scripts and sequential scripts
+    simultaneously.
   */
+  // This holds
+  var scriptQueue = {};
+  var scriptActive = {};
+  // This function checks if a script is currently running, if not it runs the
+  // next script in the queue.
+  function processScriptQueue (queue) {
+    if (!scriptActive[queue] && scriptQueue[queue].length > 0) {
+      var childproc = require('child_process').spawn(scriptQueue[queue][0].command, scriptQueue[queue][0].args, scriptQueue[queue][0].options);
+      scriptActive[queue] = true;
+      childproc.on('exit', function () {
+        // Remove the finished task from the queue
+        scriptQueue[queue].shift();
+        // Set the queue as inactive
+        scriptActive[queue] = false;
+        // Process the next task in the queue, if any.
+        processScriptQueue(queue);
+      });
+    }
+  }
   $tw.nodeMessageHandlers.runScript = function (data) {
     if (data.name) {
       if ($tw.settings.scripts) {
@@ -342,8 +362,18 @@ if ($tw.node) {
               if (index !== -1) {
                 args[index] = data[item];
               }
-            })
-            require('child_process').spawn(command, args, options);
+            });
+            if (data.sequential) {
+              data.queue = data.queue || 0;
+              scriptActive[data.queue] = scriptActive[data.queue] || false;
+              scriptQueue[data.queue] = scriptQueue[data.queue] || [];
+              // Add the current script to the queue
+              scriptQueue[data.queue].push({command: command, args: args, options: options, queue: data.queue});
+              // Process the queue to run a command
+              processScriptQueue(data.queue);
+            } else {
+              require('child_process').spawn(command, args, options);
+            }
           }
         }
       }
@@ -618,8 +648,16 @@ if ($tw.node) {
 
       // We need to make sure that the wikis entry is in the root settings
       // thing.
+      var tidText = {};
       var tiddler = $tw.wiki.getTiddler('{RootWiki}$:/WikiSettings/split');
-      var tidText = tiddler?JSON.parse(tiddler.fields.text):{};
+      if (tiddler) {
+        if (typeof tiddler.fields.text === 'object') {
+          // Clone object to make it writable
+          tidText = JSON.parse(JSON.stringify(tiddler.fields.text));
+        } else {
+          tidText = JSON.parse(tiddler.fields.text);
+        }
+      }
       tidText['wikis'] = tidText['wikis'] || '$:/WikiSettings/split/wikis';
 
       $tw.wiki.addTiddler(new $tw.Tiddler({title:'{RootWiki}$:/WikiSettings/split', text:tidText, type: 'application/json'}));

@@ -44,7 +44,10 @@ ServerSide.loadWiki = function (wikiName, wikiFolder) {
       }
     }
   }
-  var exists = fs.existsSync(path.join(wikiFolder, 'tiddlywiki.info'))
+  // Add tiddlers to the node process
+  var basePath = process.pkg?path.dirname(process.argv[0]):process.cwd();
+  var wikiFolder = path.resolve(basePath, wikiFolder);
+  var exists = fs.existsSync(path.resolve(wikiFolder, 'tiddlywiki.info'));
   if (listed && exists) {
     $tw.MultiUser = $tw.MultiUser || {};
     $tw.MultiUser.Wikis = $tw.MultiUser.Wikis || {};
@@ -82,8 +85,6 @@ ServerSide.loadWiki = function (wikiName, wikiFolder) {
       $tw.MultiUser.Wikis[wikiName].themes = wikiInfo.themes.map(function(name) {
         return '$:/themes/' + name;
       });
-      // Create the settings tiddlers for this wiki
-      //$tw.nodeMessageHandlers.saveSettings({wiki: wikiName})
     }
   }
   return listed && exists;
