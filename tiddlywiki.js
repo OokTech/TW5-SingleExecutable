@@ -51,11 +51,13 @@ $tw.boot.boot();
 openBrowser();
 
 function openBrowser() {
-  setTimeout(function () {
-    if ($tw.httpServerPort && !$tw.settings.suppressBrowser) {
-      require("openurl").open("http://127.0.0.1:" + $tw.httpServerPort);
-    } else {
-      openBrowser();
-    }
-  }, 100);
+  if (!$tw.settings.suppressBrowser) {
+    setTimeout(function () {
+      if ($tw.httpServerPort) {
+        require("openurl").open("http://127.0.0.1:" + $tw.httpServerPort);
+      } else {
+        openBrowser();
+      }
+    }, 100);
+  }
 }
