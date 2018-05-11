@@ -5,6 +5,9 @@ output/
 node_modules/
 IndexWiki/
 tiddlyLinux
+tiddlyLinux32
 tiddlyOSX
 tiddlyWin.exe
+tiddlyWin32.exe
 tiddlyOSX.command
+tiddlyOSX32.command

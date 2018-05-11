@@ -33,7 +33,7 @@ if ($tw.node) {
     // Save the list of tiddlers in the browser as part of the $tw object so it
     // can be used elsewhere.
     $tw.BrowserTiddlerList[data.source_connection] = data.titles;
-   $tw.CreateSettingsTiddlers(data.wiki);
+    $tw.CreateSettingsTiddlers(data.wiki);
   }
 
   /*
@@ -257,7 +257,7 @@ if ($tw.node) {
       text: settings,
       type: 'application/json'
     };
-    $tw.MultiUser.SendToBrowsers({type: 'makeTiddler', fields: tiddlerFields2});
+    $tw.MultiUser.SendToBrowsers(JSON.stringify({type: 'makeTiddler', fields: tiddlerFields2}));
     // Save the updated settings
     var userSettingsPath = path.join($tw.boot.wikiPath, 'settings', 'settings.json');
     if (!fs.existsSync(userSettingsPath)) {
