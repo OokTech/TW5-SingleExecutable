@@ -30,7 +30,7 @@ if (!fs.existsSync(path.join(basePath, 'IndexWiki'))) {
 
   // If we don't have an index wiki already in this location, make one.
   var destination = path.join(basePath, 'IndexWiki');
-  var source = path.join(__dirname, 'editions/MultiUser')
+  var source = path.join(__dirname, 'editions/Bob')
   specialCopy(source, destination)
 }
 

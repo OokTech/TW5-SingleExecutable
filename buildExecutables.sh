@@ -6,3 +6,4 @@ pkg . --targets latest-macos --output tiddlyOSX.command
 pkg . --targets latest-macos-x86 --output tiddlyOSX32.command
 pkg . --targets latest-linux --output tiddlyLinux
 pkg . --targets latest-linux-x86 --output tiddlyLinux32
+pkg . --targets latest-linux-armv7 --output tiddlyArmV7

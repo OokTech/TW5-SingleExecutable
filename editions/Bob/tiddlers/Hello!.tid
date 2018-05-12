@@ -1,7 +1,6 @@
-creator: inmysocks
-title: What is this?
+title: Hello!
 
-!Welcome to the ~MultiUser ~TiddlyWiki.
+!Welcome to the Bob ~TiddlyWiki.
 
 !! Connecting other computers to the wiki
 
@@ -80,4 +79,4 @@ to restart the wiki server.
   this wiki only accessible on the computer running it.
 </$reveal>
 
-More multiuser documentation [[$:/plugins/OokTech/MultiUser/readme]]
+More documentation [[$:/plugins/OokTech/Bob/readme]]

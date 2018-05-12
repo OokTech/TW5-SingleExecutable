@@ -11,3 +11,7 @@ When you run it than it will create a wiki folder for you and start the wiki
 server and then open up the wiki in your default browser.
 
 The default tiddler should have some instructions.
+
+! To get the repo at the correct version
+
+git clone --branch v5.1.17 https://github.com/Jermolene/TiddlyWiki5.git --depth 1

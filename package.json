@@ -1,7 +1,7 @@
 {
   "name": "tiddlywiki",
   "preferGlobal": "true",
-  "version": "5.1.16",
+  "version": "5.1.17",
   "author": "Jeremy Ruston <jeremy@jermolene.com>",
   "description": "a non-linear personal web notebook",
   "contributors": [
@@ -37,15 +37,15 @@
       "core/modules/*.js",
       "core/modules/**/*.js",
       "boot/*.js",
-      "plugins/OokTech/MultiUser/*.js"
+      "plugins/OokTech/Bob/*.js"
     ],
     "assets": [
       "editions/**",
       "editions/.*",
-      "editions/MultiUser",
-      "editions/MultiUser/.*",
-      "editions/MultiUser/**",
-      "editions/MultiUser/**/.*",
+      "editions/Bob",
+      "editions/Bob/.*",
+      "editions/Bob/**",
+      "editions/Bob/**/.*",
       "languages",
       "licenses",
       "plugins",
