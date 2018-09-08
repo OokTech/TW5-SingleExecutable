@@ -1,3 +1,11 @@
+Everything has moved to a new repo https://github.com/OokTech/TW5-BobEXE/releases
+
+Everything new will be there.
+
+The old readme is below
+
+---
+
 # This a version of tiddlywiki using the Bob plugin
 
 It is packaged as a single executable so you don't need to install anything to
